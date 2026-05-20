@@ -20,22 +20,29 @@ interface LabSummary {
   total: number;
   ok: number;
   maintenance: number;
+  maintenancePcs: Set<string>;
+}
+
+interface PCStatusRow {
+  pc_name: string;
+  lab_id: number;
+  status: 'ok' | 'maintenance';
 }
 
 export default function DashboardPage() {
   const [labSummaries, setLabSummaries] = useState<LabSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState<string>('');
-  const supabase = createClient();
 
   useEffect(() => {
-    fetchSummaries();
+    const client = createClient();
+    fetchSummaries(client);
     setLastSync(new Date().toLocaleTimeString());
 
     // Debounced refetch for real-time
-    let timer: NodeJS.Timeout;
-    
-    const channel = supabase
+    let timer: ReturnType<typeof setTimeout>;
+
+    const channel = client
       .channel('pc-status-changes')
       .on(
         'postgres_changes',
@@ -43,7 +50,7 @@ export default function DashboardPage() {
         () => {
           clearTimeout(timer);
           timer = setTimeout(() => {
-            fetchSummaries();
+            fetchSummaries(client);
             setLastSync(new Date().toLocaleTimeString());
           }, 500);
         }
@@ -51,14 +58,16 @@ export default function DashboardPage() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      client.removeChannel(channel);
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function fetchSummaries() {
-    const { data, error } = await supabase.from('lab_summary_view').select('*');
+  async function fetchSummaries(client = createClient()) {
+    const { data, error } = await client
+      .from('pc_status')
+      .select('pc_name, lab_id, status');
 
     if (error) {
       console.error('Error fetching Lab summaries:', error);
@@ -66,14 +75,26 @@ export default function DashboardPage() {
       return;
     }
 
+    const maintenanceByLab = new Map<number, Set<string>>();
+
+    (data as PCStatusRow[] | null || []).forEach((pc) => {
+      if (pc.status !== 'maintenance') return;
+
+      const labSet = maintenanceByLab.get(pc.lab_id) ?? new Set<string>();
+      labSet.add(pc.pc_name);
+      maintenanceByLab.set(pc.lab_id, labSet);
+    });
+
     const summaries: LabSummary[] = LABS.map((lab) => {
-      const dbSummary = (data || []).find((s) => s.lab_id === lab.id);
+      const maintenancePcs = maintenanceByLab.get(lab.id) ?? new Set<string>();
+      const maintenance = maintenancePcs.size;
       
       return {
         lab_id: lab.id,
         total: lab.pcs.length,
-        ok: dbSummary ? dbSummary.ok : lab.pcs.length,
-        maintenance: dbSummary ? dbSummary.maintenance : 0,
+        ok: lab.pcs.length - maintenance,
+        maintenance,
+        maintenancePcs,
       };
     });
 
@@ -203,6 +224,7 @@ export default function DashboardPage() {
                 total: lab.pcs.length,
                 ok: lab.pcs.length,
                 maintenance: 0,
+                maintenancePcs: new Set<string>(),
               };
               const healthPercent = Math.round((summary.ok / summary.total) * 100);
               const isHealthy = healthPercent > 95;
@@ -250,9 +272,17 @@ export default function DashboardPage() {
                   </div>
 
                   {/* PC Mini Grid Preview */}
-                  <div className="grid grid-cols-10 gap-1 opacity-40 group-hover:opacity-70 transition-opacity">
-                    {Array.from({ length: 20 }).map((_, i) => (
-                      <div key={i} className="w-1.5 h-1.5 rounded-full bg-surface-300 dark:bg-surface-600" />
+                  <div className="grid grid-cols-9 sm:grid-cols-10 gap-1 opacity-60 group-hover:opacity-90 transition-opacity">
+                    {lab.pcs.map((pcName) => (
+                      <div
+                        key={pcName}
+                        title={pcName}
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          summary.maintenancePcs.has(pcName)
+                            ? 'bg-orange-500'
+                            : 'bg-emerald-400 dark:bg-emerald-600'
+                        }`}
+                      />
                     ))}
                   </div>
 
@@ -317,4 +347,3 @@ function StatsCard({
     </div>
   );
 }
-

@@ -30,6 +30,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local agent workspaces
+.agent/
+.claude-memory/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

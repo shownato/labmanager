@@ -32,6 +32,7 @@ interface LogEntry {
 }
 
 const PAGE_SIZE = 20;
+const SEARCH_SAFE_PATTERN = /[^a-zA-Z0-9À-ÿ\s._@-]/g;
 
 export default function HistoricoPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -68,8 +69,17 @@ export default function HistoricoPage() {
       query = query.eq('action', filterAction);
     }
     if (searchQuery.trim()) {
+      const safeSearch = searchQuery.trim().replace(SEARCH_SAFE_PATTERN, '').slice(0, 80);
+
+      if (!safeSearch) {
+        setLogs([]);
+        setTotalCount(0);
+        setLoading(false);
+        return;
+      }
+
       query = query.or(
-        `pc_name.ilike.%${searchQuery}%,reason.ilike.%${searchQuery}%,performed_by.ilike.%${searchQuery}%`
+        `pc_name.ilike.%${safeSearch}%,reason.ilike.%${safeSearch}%,performed_by.ilike.%${safeSearch}%`
       );
     }
 

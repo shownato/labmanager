@@ -22,8 +22,8 @@ export default function MaintenanceModal({
 }: MaintenanceModalProps) {
   const [reason, setReason] = useState('');
   const [notes, setNotes] = useState('');
-  const [status, setStatus] = useState<PCStatus>(
-    currentStatus === 'ok' ? 'maintenance' : currentStatus
+  const [status] = useState<PCStatus>(
+    currentStatus === 'ok' ? 'maintenance' : 'ok'
   );
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
@@ -216,7 +216,7 @@ export default function MaintenanceModal({
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  {isResolving ? 'Marcar como Resolvido' : 'Relatar Problema'}
+                  {isResolving ? 'Colocar Online' : 'Relatar Problema'}
                 </>
               )}
             </button>

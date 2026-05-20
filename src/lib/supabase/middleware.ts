@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isEmailAuthorized } from '@/lib/auth/authorization';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -38,6 +39,29 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
+  }
+
+  if (user && !isEmailAuthorized(user.email)) {
+    await supabase.auth.signOut();
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('error', 'unauthorized');
+    return NextResponse.redirect(url);
+  }
+
+  if (user && request.nextUrl.pathname.startsWith('/admin')) {
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      url.searchParams.set('error', 'admin_required');
+      return NextResponse.redirect(url);
+    }
   }
 
   // If user is logged in and tries to access login page, redirect to dashboard
