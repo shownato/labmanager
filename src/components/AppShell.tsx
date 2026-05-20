@@ -24,6 +24,7 @@ interface SidebarProps {
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/scanner', label: 'Leitor QR', icon: QrCode },
   { href: '/historico', label: 'Histórico', icon: ClipboardList },
 ];
 
