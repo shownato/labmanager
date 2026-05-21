@@ -9,6 +9,10 @@ interface MaintenanceModalProps {
   pcName: string;
   labId: number;
   currentStatus: PCStatus;
+  currentReason?: string | null;
+  currentNotes?: string | null;
+  currentReportedBy?: string | null;
+  currentReportedAt?: string | null;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -17,6 +21,10 @@ export default function MaintenanceModal({
   pcName,
   labId,
   currentStatus,
+  currentReason,
+  currentNotes,
+  currentReportedBy,
+  currentReportedAt,
   onClose,
   onSaved,
 }: MaintenanceModalProps) {
@@ -29,6 +37,17 @@ export default function MaintenanceModal({
   const supabase = createClient();
 
   const isResolving = currentStatus !== 'ok' && status === 'ok';
+
+  function formatReportedAt(value?: string | null) {
+    if (!value) return null;
+
+    return new Date(value).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +86,7 @@ export default function MaintenanceModal({
 
         if (error) throw error;
 
-        // NOVO: Criar chamado automático no servidor GLPI 
+        // Tenta criar o chamado no GLPI e informa se a integração falhar.
         try {
           const glpiTitle = `Manutenção: ${pcName} (Lab ${labId}) - ${reason}`;
           const glpiContent = `
@@ -81,20 +100,34 @@ export default function MaintenanceModal({
 * **Detalhes Extras:** ${notes || 'Nenhuma observação adicional fornecida.'}
           `.trim();
           
-          // Dispara para nossa API Next.js que vai se comunicar com o servidor GLPI físico
-          fetch('/api/tickets', {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+          const response = await fetch('/api/tickets', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
             body: JSON.stringify({
               title: glpiTitle,
               description: glpiContent
             })
-          }).catch(err => console.error("Falha silenciosa ao enviar para GLPI:", err));
-          
-          // Note que não usamos 'await' de propósito aqui.
-          // Assim a tela fecha rápido para o professor sem esperar o servidor GLPI responder.
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            const payload = await response.json().catch(() => null);
+            console.error('Falha ao enviar para GLPI:', payload || response.statusText);
+            const details = payload
+              ? [payload.stage ? `Etapa: ${payload.stage}` : null, payload.endpoint ? `Destino: ${payload.endpoint}` : null, payload.error ? `Erro: ${payload.error}` : null]
+                  .filter(Boolean)
+                  .join('\n')
+              : response.statusText;
+            alert(`Problema salvo no LabManager, mas o chamado no GLPI falhou.\n\n${details}`);
+          }
         } catch (glpiErr) {
-          console.error("Erro interno ao montar chamado para o GLPI:", glpiErr);
+          console.error("Erro ao enviar chamado para o GLPI:", glpiErr);
+          alert('Problema salvo no LabManager, mas o GLPI não respondeu. Avise a equipe CCI.');
         }
       }
 
@@ -146,6 +179,27 @@ export default function MaintenanceModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {isResolving && (
+            <div className="rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 p-4 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-orange-700 dark:text-orange-300">
+                Problema atual
+              </p>
+              <p className="text-sm font-semibold text-surface-900 dark:text-white">
+                {currentReason || 'Problema nao informado'}
+              </p>
+              {currentNotes && (
+                <p className="text-sm text-surface-600 dark:text-surface-300">
+                  {currentNotes}
+                </p>
+              )}
+              {(currentReportedBy || currentReportedAt) && (
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  Reportado por {currentReportedBy || 'usuario'}{formatReportedAt(currentReportedAt) ? ` em ${formatReportedAt(currentReportedAt)}` : ''}
+                </p>
+              )}
+            </div>
+          )}
+
           {!isResolving && (
             <>
               {/* Reason */}

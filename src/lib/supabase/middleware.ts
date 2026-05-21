@@ -37,7 +37,10 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/auth')
   ) {
     const url = request.nextUrl.clone();
+    const destination = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     url.pathname = '/login';
+    url.search = '';
+    url.searchParams.set('next', destination);
     return NextResponse.redirect(url);
   }
 
@@ -66,8 +69,11 @@ export async function updateSession(request: NextRequest) {
 
   // If user is logged in and tries to access login page, redirect to dashboard
   if (user && request.nextUrl.pathname.startsWith('/login')) {
+    const nextParam = request.nextUrl.searchParams.get('next') ?? '/';
+    const next = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/';
     const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = next.split('?')[0];
+    url.search = next.includes('?') ? `?${next.split('?').slice(1).join('?')}` : '';
     return NextResponse.redirect(url);
   }
 

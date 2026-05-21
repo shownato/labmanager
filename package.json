@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "worker:glpi": "node scripts/glpi-worker.mjs",
     "lint": "next lint"
   },
   "dependencies": {

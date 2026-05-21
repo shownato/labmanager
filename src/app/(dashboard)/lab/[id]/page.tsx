@@ -298,6 +298,10 @@ function LabDetailContent({
           pcName={selectedPc.pc_name}
           labId={labId}
           currentStatus={selectedPc.status}
+          currentReason={selectedPc.reason}
+          currentNotes={selectedPc.notes}
+          currentReportedBy={selectedPc.reported_by}
+          currentReportedAt={selectedPc.reported_at}
           onClose={() => setSelectedPc(null)}
           onSaved={fetchPcs}
         />

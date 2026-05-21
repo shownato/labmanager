@@ -23,6 +23,8 @@ function LoginContent() {
   const [error, setError] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
+  const nextParam = searchParams.get('next') ?? '/';
+  const nextPath = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/';
   const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null);
 
   useEffect(() => {
@@ -62,7 +64,7 @@ function LoginContent() {
       return;
     }
 
-    router.push('/');
+    router.push(nextPath);
     router.refresh();
   };
 

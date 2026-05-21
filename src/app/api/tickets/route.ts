@@ -5,6 +5,7 @@ import { isEmailAuthorized } from '@/lib/auth/authorization';
 
 const MAX_TITLE_LENGTH = 160;
 const MAX_DESCRIPTION_LENGTH = 4000;
+const GLPI_DELIVERY_MODE = process.env.GLPI_DELIVERY_MODE || 'queue';
 
 function normalizeText(value: unknown, maxLength: number) {
   if (typeof value !== 'string') return '';
@@ -30,13 +31,47 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Titulo e descricao sao obrigatorios' }, { status: 400 });
     }
 
+    if (GLPI_DELIVERY_MODE === 'queue') {
+      const { error } = await supabase.from('glpi_ticket_queue').insert({
+        title,
+        description,
+        requested_by: user.user_metadata?.full_name || user.email,
+        requested_by_email: user.email,
+      });
+
+      if (error) {
+        return NextResponse.json(
+          {
+            error: 'Falha ao enfileirar chamado para o GLPI',
+            stage: 'queue',
+            details: error.message,
+          },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        queued: true,
+        message: 'Chamado enfileirado para envio ao GLPI',
+      });
+    }
+
     const result = await createTicket({
       name: title,
       content: description,
     });
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: result.error,
+          stage: result.stage,
+          status: result.status ?? null,
+          endpoint: result.endpoint ?? null,
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(result);
