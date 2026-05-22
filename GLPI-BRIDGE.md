@@ -30,7 +30,7 @@ No Ubuntu, dentro da pasta do projeto, crie um `.env` local para o worker:
 ```env
 SUPABASE_URL=https://SEU_PROJETO.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=SUA_SERVICE_ROLE_KEY
-GLPI_API_URL=http://10.109.162.115/apirest.php
+GLPI_API_URL=http://10.109.160.50/apirest.php
 GLPI_APP_TOKEN=SEU_APP_TOKEN
 GLPI_USER_TOKEN=SEU_USER_TOKEN
 GLPI_WORKER_INTERVAL_MS=10000
