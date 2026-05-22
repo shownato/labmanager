@@ -17,6 +17,27 @@ interface MaintenanceModalProps {
   onSaved: () => void;
 }
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (error && typeof error === 'object') {
+    const details = error as {
+      message?: string;
+      details?: string;
+      hint?: string;
+      code?: string;
+    };
+
+    return [details.message, details.details, details.hint, details.code ? `Codigo: ${details.code}` : null]
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  return String(error || 'Erro desconhecido');
+}
+
 export default function MaintenanceModal({
   pcName,
   labId,
@@ -135,7 +156,7 @@ export default function MaintenanceModal({
       onClose();
     } catch (err) {
       console.error('Erro ao salvar manutenção:', err);
-      alert('Falha ao salvar as alterações. Por favor, tente novamente.');
+      alert(`Falha ao salvar as alterações.\n\n${getErrorMessage(err)}`);
     } finally {
       setLoading(false);
     }
