@@ -40,21 +40,37 @@ function glpiUrl(path) {
 }
 
 function toErrorMessage(error) {
-  return error instanceof Error ? error.message : String(error);
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+
+  const cause = error.cause;
+  if (cause && typeof cause === 'object' && 'code' in cause) {
+    return `${error.message} (${cause.code})`;
+  }
+
+  return error.message;
 }
 
 async function initSession() {
-  const response = await fetch(glpiUrl('/initSession'), {
-    method: 'GET',
-    headers: {
-      'App-Token': GLPI_APP_TOKEN,
-      Authorization: `user_token ${GLPI_USER_TOKEN}`,
-    },
-  });
+  const url = glpiUrl('/initSession');
+  let response;
+
+  try {
+    response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'App-Token': GLPI_APP_TOKEN,
+        Authorization: `user_token ${GLPI_USER_TOKEN}`,
+      },
+    });
+  } catch (error) {
+    throw new Error(`GLPI initSession network failed at ${url}: ${toErrorMessage(error)}`);
+  }
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`GLPI initSession failed: HTTP ${response.status} ${body}`);
+    throw new Error(`GLPI initSession failed at ${url}: HTTP ${response.status} ${body}`);
   }
 
   const data = await response.json();
@@ -62,14 +78,16 @@ async function initSession() {
 }
 
 async function killSession(sessionToken) {
-  await fetch(glpiUrl('/killSession'), {
+  const url = glpiUrl('/killSession');
+
+  await fetch(url, {
     method: 'GET',
     headers: {
       'App-Token': GLPI_APP_TOKEN,
       'Session-Token': sessionToken,
     },
   }).catch((error) => {
-    console.error('Failed to close GLPI session:', toErrorMessage(error));
+    console.error(`Failed to close GLPI session at ${url}:`, toErrorMessage(error));
   });
 }
 
@@ -79,29 +97,36 @@ async function createGlpiTicket(ticket) {
   try {
     sessionToken = await initSession();
 
-    const response = await fetch(glpiUrl('/Ticket'), {
-      method: 'POST',
-      headers: {
-        'App-Token': GLPI_APP_TOKEN,
-        'Session-Token': sessionToken,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        input: {
-          name: ticket.title,
-          content: ticket.description,
-          urgency: 3,
-          impact: 3,
-          priority: 3,
-          type: 1,
-          requesttypes_id: 1,
+    const url = glpiUrl('/Ticket');
+    let response;
+
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'App-Token': GLPI_APP_TOKEN,
+          'Session-Token': sessionToken,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          input: {
+            name: ticket.title,
+            content: ticket.description,
+            urgency: 3,
+            impact: 3,
+            priority: 3,
+            type: 1,
+            requesttypes_id: 1,
+          },
+        }),
+      });
+    } catch (error) {
+      throw new Error(`GLPI create ticket network failed at ${url}: ${toErrorMessage(error)}`);
+    }
 
     if (!response.ok) {
       const body = await response.text();
-      throw new Error(`GLPI create ticket failed: HTTP ${response.status} ${body}`);
+      throw new Error(`GLPI create ticket failed at ${url}: HTTP ${response.status} ${body}`);
     }
 
     return await response.json();
