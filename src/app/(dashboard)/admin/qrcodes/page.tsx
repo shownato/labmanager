@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { LABS } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
-import { Printer, Download, Search, Filter, Monitor } from 'lucide-react';
+import { Printer, Download, Filter, Monitor } from 'lucide-react';
 
 export const runtime = 'edge';
 
@@ -128,21 +128,10 @@ export default function QRCodesPage() {
               className="glass-card p-6 flex flex-col items-center justify-center gap-4 animate-in print:shadow-none print:border print:border-dashed print:border-surface-200 print:bg-white print:rounded-none print:break-inside-avoid print:w-[6.5cm] print:h-[8cm]"
               style={{ animationDelay: `${index * 15}ms` }}
             >
-              {/* Branding - Print Only */}
-              <div className="hidden print:flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 bg-brand-500 rounded flex items-center justify-center">
-                  <Monitor className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-[10px] font-black tracking-widest text-surface-900">LABMANAGER</span>
-              </div>
-
               <div className="text-center">
                 <h3 className="text-2xl font-black text-surface-900 dark:text-white print:text-black print:text-4xl">
                   {pcName}
                 </h3>
-                <p className="text-[10px] font-bold text-brand-500 print:text-black uppercase tracking-[0.2em] mt-1">
-                  Laboratório {selectedLab}
-                </p>
               </div>
               
               <div className="bg-white p-2 rounded-lg border border-surface-100 dark:border-surface-700 print:border-none print:p-0">
@@ -153,15 +142,6 @@ export default function QRCodesPage() {
                   className="w-32 h-32 print:w-48 print:h-48"
                   crossOrigin="anonymous"
                 />
-              </div>
-
-              <div className="text-center space-y-1">
-                <p className="text-[8px] font-black text-surface-900 dark:text-surface-300 print:text-black print:text-[11px] uppercase tracking-tighter">
-                  Propriedade CCI - Escaneie para Suporte
-                </p>
-                <p className="text-[7px] text-surface-400 print:text-surface-500 font-medium">
-                  {baseUrl.replace('https://', '').replace('http://', '')}
-                </p>
               </div>
             </div>
           );
