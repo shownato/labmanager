@@ -228,18 +228,23 @@ export default function DashboardPage() {
               };
               const healthPercent = Math.round((summary.ok / summary.total) * 100);
               const isHealthy = healthPercent > 95;
+              const maintenancePcList = lab.pcs.filter((pcName) =>
+                summary.maintenancePcs.has(pcName)
+              );
 
               return (
-                <Link
+                <div
                   key={lab.id}
-                  href={`/lab/${lab.id}`}
                   className={`group relative glass-card p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl animate-in stagger-${(index % 3) + 1}`}
                 >
                   <div className="flex items-start justify-between mb-8">
                     <div className="space-y-1">
-                      <h3 className="text-2xl font-black text-surface-900 dark:text-white group-hover:text-brand-500 transition-colors">
+                      <Link
+                        href={`/lab/${lab.id}`}
+                        className="block text-2xl font-black text-surface-900 dark:text-white group-hover:text-brand-500 transition-colors"
+                      >
                         Lab {lab.id}
-                      </h3>
+                      </Link>
                       <p className="text-xs font-bold text-surface-400 tracking-widest uppercase">
                         Lab{lab.prefix} — {lab.pcEnd}
                       </p>
@@ -286,6 +291,31 @@ export default function DashboardPage() {
                     ))}
                   </div>
 
+                  {maintenancePcList.length > 0 && (
+                    <div className="mt-6 rounded-xl border border-orange-200/70 dark:border-orange-900/60 bg-orange-50/70 dark:bg-orange-950/20 p-3">
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <span className="text-[10px] text-orange-700 dark:text-orange-300 uppercase font-black tracking-wider">
+                          PCs em manutencao
+                        </span>
+                        <span className="text-xs font-black text-orange-600 dark:text-orange-300">
+                          {maintenancePcList.length}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {maintenancePcList.map((pcName) => (
+                          <Link
+                            key={pcName}
+                            href={`/lab/${lab.id}?pc=${encodeURIComponent(pcName)}`}
+                            className="rounded-md bg-white/80 dark:bg-surface-900 px-2 py-1 text-[10px] font-black text-orange-700 dark:text-orange-300 ring-1 ring-orange-200 dark:ring-orange-900 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+                            title={`Abrir ${pcName}`}
+                          >
+                            {pcName}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="mt-8 pt-6 border-t border-surface-100 dark:border-surface-800 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col">
@@ -297,11 +327,15 @@ export default function DashboardPage() {
                         <span className="text-sm font-bold text-orange-500">{summary.maintenance}</span>
                       </div>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-surface-50 dark:bg-surface-800 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
+                    <Link
+                      href={`/lab/${lab.id}`}
+                      className="w-10 h-10 rounded-full bg-surface-50 dark:bg-surface-800 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0"
+                      title={`Abrir Lab ${lab.id}`}
+                    >
                       <ArrowRight className="w-5 h-5 text-brand-500" />
-                    </div>
+                    </Link>
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
