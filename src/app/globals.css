@@ -142,3 +142,65 @@
     @apply bg-surface-400 dark:bg-surface-500;
   }
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
+  html,
+  body {
+    width: 210mm;
+    min-height: 297mm;
+    background: #ffffff !important;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .qr-print-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 62mm) !important;
+    gap: 3mm !important;
+    align-items: start !important;
+    justify-content: center !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .qr-print-card {
+    width: 62mm !important;
+    height: 65mm !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    border: 1px dashed #cbd5e1 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    gap: 2.5mm !important;
+    padding: 5mm 4mm !important;
+  }
+
+  .qr-print-card * {
+    color: #000000 !important;
+  }
+
+  .qr-print-card h3 {
+    font-size: 18pt !important;
+    line-height: 1 !important;
+  }
+
+  .qr-print-card p {
+    font-size: 7pt !important;
+    line-height: 1.15 !important;
+  }
+
+  .qr-print-image {
+    width: 38mm !important;
+    height: 38mm !important;
+  }
+}
