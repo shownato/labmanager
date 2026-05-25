@@ -5,6 +5,8 @@ import { LABS } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import { Printer, Download, Search, Filter, Monitor } from 'lucide-react';
 
+export const runtime = 'edge';
+
 export default function QRCodesPage() {
   const [selectedLab, setSelectedLab] = useState<number>(1);
   const [baseUrl, setBaseUrl] = useState('');
@@ -115,7 +117,7 @@ export default function QRCodesPage() {
       </div>
 
       {/* QR Code Grid */}
-      <div className="qr-print-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 print:grid-cols-3 print:gap-0 print:p-0">
         {lab?.pcs.map((pcName, index) => {
           const maintenanceUrl = `${baseUrl}/lab/${selectedLab}?pc=${pcName}`;
           const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(maintenanceUrl)}&margin=10`;
@@ -123,7 +125,7 @@ export default function QRCodesPage() {
           return (
             <div 
               key={pcName} 
-              className="qr-print-card glass-card p-6 flex flex-col items-center justify-center gap-4 animate-in"
+              className="glass-card p-6 flex flex-col items-center justify-center gap-4 animate-in print:shadow-none print:border print:border-dashed print:border-surface-200 print:bg-white print:rounded-none print:break-inside-avoid print:w-[6.5cm] print:h-[8cm]"
               style={{ animationDelay: `${index * 15}ms` }}
             >
               {/* Branding - Print Only */}
@@ -148,7 +150,7 @@ export default function QRCodesPage() {
                 <img 
                   src={qrUrl} 
                   alt={`QR Code ${pcName}`}
-                  className="qr-print-image w-32 h-32"
+                  className="w-32 h-32 print:w-48 print:h-48"
                   crossOrigin="anonymous"
                 />
               </div>
@@ -182,3 +184,4 @@ export default function QRCodesPage() {
     </div>
   );
 }
+
