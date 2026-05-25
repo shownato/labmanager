@@ -13,6 +13,7 @@ import {
   Wrench,
   BarChart3,
   Clock,
+  X,
 } from 'lucide-react';
 
 interface LabSummary {
@@ -33,6 +34,7 @@ export default function DashboardPage() {
   const [labSummaries, setLabSummaries] = useState<LabSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState<string>('');
+  const [showMaintenanceDetails, setShowMaintenanceDetails] = useState(false);
 
   useEffect(() => {
     const client = createClient();
@@ -106,6 +108,15 @@ export default function DashboardPage() {
   const totalOk = labSummaries.reduce((a, b) => a + b.ok, 0);
   const totalMaint = labSummaries.reduce((a, b) => a + b.maintenance, 0);
   const globalHealth = totalPcs > 0 ? Math.round((totalOk / totalPcs) * 100) : 0;
+  const labsWithMaintenance = labSummaries
+    .map((summary) => {
+      const lab = LABS.find((item) => item.id === summary.lab_id);
+      if (!lab) return null;
+
+      const pcs = lab.pcs.filter((pcName) => summary.maintenancePcs.has(pcName));
+      return pcs.length > 0 ? { lab, pcs } : null;
+    })
+    .filter((item): item is { lab: (typeof LABS)[number]; pcs: string[] } => Boolean(item));
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 pb-12">
@@ -188,10 +199,20 @@ export default function DashboardPage() {
           icon={<Wrench className="w-6 h-6" />}
           label="Em Manutenção"
           value={loading ? '...' : totalMaint.toString()}
-          subtitle="Aguardando reparo"
+          subtitle={totalMaint > 0 ? 'Clique para ver os PCs' : 'Aguardando reparo'}
           color="orange"
+          onClick={() => setShowMaintenanceDetails(true)}
+          disabled={loading || totalMaint === 0}
         />
       </div>
+
+      {showMaintenanceDetails && (
+        <MaintenanceDetailsModal
+          totalMaint={totalMaint}
+          labsWithMaintenance={labsWithMaintenance}
+          onClose={() => setShowMaintenanceDetails(false)}
+        />
+      )}
 
       {/* Labs Grid */}
       <div className="space-y-6">
@@ -351,12 +372,16 @@ function StatsCard({
   value,
   subtitle,
   color,
+  onClick,
+  disabled,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   subtitle: string;
   color: string;
+  onClick?: () => void;
+  disabled?: boolean;
 }) {
   const colorMap: Record<string, string> = {
     brand: 'bg-brand-500/10 text-brand-500 ring-brand-500/20',
@@ -364,8 +389,17 @@ function StatsCard({
     orange: 'bg-orange-500/10 text-orange-500 ring-orange-500/20',
   };
 
+  const Component = onClick ? 'button' : 'div';
+
   return (
-    <div className="glass-card p-8 group hover:scale-[1.02] transition-transform duration-300 overflow-hidden relative">
+    <Component
+      type={onClick ? 'button' : undefined}
+      onClick={disabled ? undefined : onClick}
+      disabled={onClick ? disabled : undefined}
+      className={`glass-card p-8 group hover:scale-[1.02] transition-transform duration-300 overflow-hidden relative text-left w-full ${
+        onClick && !disabled ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-400' : ''
+      } ${disabled ? 'cursor-default' : ''}`}
+    >
       <div className={`absolute top-0 right-0 w-32 h-32 blur-3xl rounded-full opacity-10 -translate-y-12 translate-x-12 ${
         color === 'brand' ? 'bg-brand-500' : color === 'emerald' ? 'bg-emerald-500' : 'bg-orange-500'
       }`} />
@@ -377,6 +411,90 @@ function StatsCard({
         <p className="text-sm font-bold text-surface-500 dark:text-surface-400 uppercase tracking-widest">{label}</p>
         <p className="text-4xl font-black text-surface-900 dark:text-white">{value}</p>
         <p className="text-xs text-surface-400 font-medium">{subtitle}</p>
+      </div>
+    </Component>
+  );
+}
+
+function MaintenanceDetailsModal({
+  totalMaint,
+  labsWithMaintenance,
+  onClose,
+}: {
+  totalMaint: number;
+  labsWithMaintenance: Array<{ lab: (typeof LABS)[number]; pcs: string[] }>;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label="Fechar"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      <div className="relative w-full max-w-3xl max-h-[85vh] overflow-hidden glass-card">
+        <div className="flex items-center justify-between gap-4 border-b border-surface-200/50 dark:border-surface-700/50 p-5">
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-orange-500">
+              Em manutencao
+            </p>
+            <h2 className="text-xl font-black text-surface-900 dark:text-white">
+              {totalMaint} computador{totalMaint === 1 ? '' : 'es'} aguardando reparo
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl p-2 text-surface-400 transition-colors hover:bg-surface-100 hover:text-surface-700 dark:hover:bg-surface-800 dark:hover:text-white"
+            aria-label="Fechar lista de manutencao"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="max-h-[65vh] overflow-y-auto p-5 space-y-4">
+          {labsWithMaintenance.length === 0 ? (
+            <div className="rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/20 p-4 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+              Nenhum computador em manutencao agora.
+            </div>
+          ) : (
+            labsWithMaintenance.map(({ lab, pcs }) => (
+              <section
+                key={lab.id}
+                className="rounded-xl border border-surface-200 dark:border-surface-800 p-4"
+              >
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-black text-surface-900 dark:text-white">
+                      Lab {lab.id}
+                    </h3>
+                    <p className="text-xs font-bold uppercase tracking-widest text-surface-400">
+                      Lab{lab.prefix} - {lab.pcEnd}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-700 dark:bg-orange-950/40 dark:text-orange-300">
+                    {pcs.length}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {pcs.map((pcName) => (
+                    <Link
+                      key={pcName}
+                      href={`/lab/${lab.id}?pc=${encodeURIComponent(pcName)}`}
+                      onClick={onClose}
+                      className="rounded-lg bg-orange-50 px-3 py-2 text-xs font-black text-orange-700 ring-1 ring-orange-200 transition-colors hover:bg-orange-100 dark:bg-orange-950/30 dark:text-orange-300 dark:ring-orange-900 dark:hover:bg-orange-900/40"
+                    >
+                      {pcName}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
