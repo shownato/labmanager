@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { getMatriculaLogin } from '@/lib/auth/matricula.mjs';
 import { MAINTENANCE_REASONS, type PCStatus } from '@/lib/constants';
@@ -52,13 +52,24 @@ export default function MaintenanceModal({
 }: MaintenanceModalProps) {
   const [reason, setReason] = useState('');
   const [notes, setNotes] = useState('');
-  const [status] = useState<PCStatus>(
-    currentStatus === 'ok' ? 'maintenance' : 'ok'
-  );
+  const [canResolve, setCanResolve] = useState(false);
+  const [checkingPermission, setCheckingPermission] = useState(true);
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
-  const isResolving = currentStatus !== 'ok' && status === 'ok';
+  const isResolving = currentStatus !== 'ok' && canResolve;
+
+  useEffect(() => {
+    let active = true;
+    const client = createClient();
+    client.rpc('can_resolve_pc_issue').then(({ data, error }) => {
+      if (active) {
+        setCanResolve(!error && data === true);
+        setCheckingPermission(false);
+      }
+    });
+    return () => { active = false; };
+  }, []);
 
   function formatReportedAt(value?: string | null) {
     if (!value) return null;
@@ -73,6 +84,7 @@ export default function MaintenanceModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (checkingPermission || loading) return;
     setLoading(true);
 
     try {
@@ -203,7 +215,7 @@ export default function MaintenanceModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {isResolving && (
+          {currentStatus !== 'ok' && (
             <div className="rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 p-4 space-y-2">
               <p className="text-xs font-bold uppercase tracking-wider text-orange-700 dark:text-orange-300">
                 Problema atual
@@ -222,6 +234,13 @@ export default function MaintenanceModal({
                 </p>
               )}
             </div>
+          )}
+
+          {currentStatus !== 'ok' && !canResolve && !checkingPermission && (
+            <p className="text-sm text-surface-500">
+              Este computador aguarda a equipe autorizada para voltar ao funcionamento.
+              Você pode registrar outro relato abaixo.
+            </p>
           )}
 
           {!isResolving && (
@@ -286,7 +305,7 @@ export default function MaintenanceModal({
             </button>
             <button
               type="submit"
-              disabled={loading || (!isResolving && !reason)}
+              disabled={checkingPermission || loading || (!isResolving && !reason)}
               className={`flex-1 ${isResolving ? 'btn-primary' : 'btn-danger'} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {loading ? (

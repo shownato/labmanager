@@ -40,7 +40,7 @@ Os estados são `ok` e `maintenance`. “Online” significa ausência de manute
 
 ## Relatar manutenção
 
-1. Abra um PC sem manutenção.
+1. Abra um PC. Professores também podem acrescentar um relato a um equipamento já em manutenção.
 2. Escolha o motivo obrigatório.
 3. Informe observações, se necessário.
 4. Clique em **Relatar Problema** e aguarde.
@@ -51,7 +51,9 @@ O status e o histórico são gravados juntos. Depois, a aplicação solicita um 
 
 ## Resolver manutenção
 
-Abra o PC em manutenção, confira o relato, descreva o que foi feito e clique em **Colocar Online**. O status muda para `ok` e uma resolução é adicionada ao histórico. Sem observações, é usado “Sem observações adicionais”.
+Somente Lucas França, Ricardo Romero, Gabriela Reitz e Jakelline Povoas podem liberar computadores. A permissão está vinculada às contas cadastradas na tabela `maintenance_technicians`, e não ao nome digitado ou ao papel genérico de administrador. Lucas tem a permissão no acesso por matrícula e no e-mail existente.
+
+Com uma dessas contas, abra o PC em manutenção, confira o relato, descreva o que foi feito e clique em **Colocar Online**. O status muda para `ok` e uma resolução é adicionada ao histórico. Sem observações, é usado “Sem observações adicionais”. Professores podem consultar e relatar defeitos; não podem colocar computadores em funcionamento.
 
 A resolução **não encerra o chamado GLPI**. O acompanhamento no GLPI é separado.
 

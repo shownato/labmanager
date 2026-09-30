@@ -288,7 +288,7 @@ function LabDetailContent({
 
         <div className="flex items-center gap-2 ml-auto text-xs text-surface-400">
           <Clock className="w-3.5 h-3.5" />
-          Clique em um PC para relatar ou resolver um problema
+          Clique em um PC para consultar ou relatar um problema. Liberação pela equipe autorizada.
         </div>
       </div>
 
