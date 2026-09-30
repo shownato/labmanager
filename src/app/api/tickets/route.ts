@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createTicket } from '@/lib/glpi';
 import { createClient } from '@/lib/supabase/server';
-import { isEmailAuthorized } from '@/lib/auth/authorization';
+import { isUserAuthorized } from '@/lib/auth/authorization';
 
 const MAX_TITLE_LENGTH = 160;
 const MAX_DESCRIPTION_LENGTH = 4000;
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user || !isEmailAuthorized(user.email)) {
+    if (!user || !isUserAuthorized(user)) {
       return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 });
     }
 

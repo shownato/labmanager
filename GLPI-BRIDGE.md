@@ -1,5 +1,7 @@
 # GLPI Bridge sem abrir porta no roteador
 
+> Referência rápida. Consulte também [Arquitetura](docs/ARQUITETURA.md), [Banco de dados](docs/BANCO-DE-DADOS.md), [Operação](docs/OPERACAO.md) e [Pendências](docs/PENDENCIAS.md). O worker e o deploy reais não foram verificados. A fila atual não recupera automaticamente itens presos em processing; confira o GLPI antes de reenviar.
+
 Este fluxo permite que o LabManager na Vercel crie chamados no GLPI interno sem acesso direto ao IP `10.x.x.x`.
 
 ## Como funciona
@@ -17,7 +19,7 @@ Vercel -> Supabase -> Worker no Ubuntu -> GLPI interno
 
 ## 1. Criar a fila no Supabase
 
-No SQL Editor do Supabase, execute:
+Em uma instalação revisada e após conferir se os objetos já existem, o arquivo que define a fila é:
 
 ```txt
 supabase-glpi-queue.sql

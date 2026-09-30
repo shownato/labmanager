@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { getMatriculaLogin } from '@/lib/auth/matricula.mjs';
 import Link from 'next/link';
 import {
   LayoutDashboard,
@@ -48,7 +49,8 @@ export default function AppShell({ children }: SidebarProps) {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (user) {
         setUserName(user.user_metadata?.full_name || 'Usuário');
-        setUserEmail(user.email || '');
+        const matriculaLogin = getMatriculaLogin(user);
+        setUserEmail(matriculaLogin ? `Matrícula ${matriculaLogin}` : user.email || '');
 
         const { data: profile } = await supabase
           .from('user_profiles')

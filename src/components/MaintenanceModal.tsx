@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getMatriculaLogin } from '@/lib/auth/matricula.mjs';
 import { MAINTENANCE_REASONS, type PCStatus } from '@/lib/constants';
 import { X, AlertTriangle, Wrench, Send } from 'lucide-react';
 
@@ -82,6 +83,8 @@ export default function MaintenanceModal({
       if (!user) throw new Error('Usuário não autenticado');
 
       const userName = user.user_metadata?.full_name || user.email;
+      const matriculaLogin = getMatriculaLogin(user);
+      const userIdentification = matriculaLogin ? `Matrícula ${matriculaLogin}` : user.email;
 
       if (isResolving) {
         // Resolve using Atomic RPC
@@ -115,7 +118,7 @@ export default function MaintenanceModal({
 
 * **Laboratório:** ${labId}
 * **Computador:** ${pcName}
-* **Professor(a)/Monitor:** ${userName} (${user.email})
+* **Professor(a)/Monitor:** ${userName} (${userIdentification})
 
 * **Motivo Principal:** ${reason}
 * **Detalhes Extras:** ${notes || 'Nenhuma observação adicional fornecida.'}

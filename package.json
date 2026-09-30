@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "worker:glpi": "node scripts/glpi-worker.mjs",
+    "import:teachers": "node scripts/import-teachers.mjs",
+    "test:auth": "node --test tests/auth.test.mjs tests/teachers-import.test.mjs",
     "lint": "next lint"
   },
   "dependencies": {

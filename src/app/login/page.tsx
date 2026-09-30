@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { matriculaEmail } from '@/lib/auth/matricula.mjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertCircle, Eye, EyeOff, LogIn, Monitor, ShieldCheck } from 'lucide-react';
 
@@ -16,7 +17,8 @@ export default function LoginPage() {
 }
 
 function LoginContent() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [staffAccess, setStaffAccess] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,6 +29,14 @@ function LoginContent() {
   const nextPath = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/';
   const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null);
 
+  function changeAccessMode(useEmail: boolean) {
+    setStaffAccess(useEmail);
+    setIdentifier('');
+    setPassword('');
+    setShowPassword(false);
+    setError('');
+  }
+
   useEffect(() => {
     setSupabase(createClient());
   }, []);
@@ -35,7 +45,7 @@ function LoginContent() {
     const errorParam = searchParams.get('error');
 
     if (errorParam === 'unauthorized') {
-      setError('Este e-mail nao esta autorizado a acessar o LabManager.');
+      setError('Esta conta não está autorizada a acessar o LabManager.');
     }
 
     if (errorParam === 'auth') {
@@ -53,19 +63,27 @@ function LoginContent() {
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-
-    if (error) {
-      setError('E-mail ou senha incorretos.');
+    try {
+      const login = identifier.trim();
+      if (!staffAccess && !/^[0-9]{6}$/.test(login)) {
+        setError('Informe os seis primeiros dígitos da matrícula.');
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email: staffAccess ? login.toLowerCase() : matriculaEmail(login),
+        password,
+      });
+      if (error) {
+        setError(staffAccess ? 'E-mail ou senha incorretos.' : 'Matrícula ou senha incorretas.');
+        return;
+      }
+      router.push(nextPath);
+      router.refresh();
+    } catch {
+      setError('Não foi possível entrar. Verifique sua conexão e tente novamente.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    router.push(nextPath);
-    router.refresh();
   };
 
   return (
@@ -97,6 +115,27 @@ function LoginContent() {
             </p>
           </div>
 
+          <div className="mb-6 grid grid-cols-2 gap-2" role="group" aria-label="Forma de acesso">
+            <button
+              type="button"
+              aria-pressed={!staffAccess}
+              disabled={loading}
+              onClick={() => changeAccessMode(false)}
+              className={`${!staffAccess ? 'btn-primary' : 'btn-secondary'} disabled:opacity-50`}
+            >
+              Matrícula
+            </button>
+            <button
+              type="button"
+              aria-pressed={staffAccess}
+              disabled={loading}
+              onClick={() => changeAccessMode(true)}
+              className={`${staffAccess ? 'btn-primary' : 'btn-secondary'} disabled:opacity-50`}
+            >
+              E-mail
+            </button>
+          </div>
+
           {error && (
             <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 text-sm">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -106,19 +145,28 @@ function LoginContent() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                E-mail
+              <label htmlFor="identifier" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+                {staffAccess ? 'E-mail' : 'Matrícula'}
               </label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="identifier"
+                name="username"
+                type={staffAccess ? 'email' : 'text'}
+                inputMode={staffAccess ? 'email' : 'numeric'}
+                pattern={staffAccess ? undefined : '[0-9]{6}'}
+                maxLength={staffAccess ? 254 : 6}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="input-field"
-                placeholder="seu@email.com"
-                autoComplete="email"
+                placeholder={staffAccess ? 'seu@email.com' : '6 primeiros dígitos'}
+                autoComplete="username"
                 required
               />
+              {!staffAccess && (
+                <p className="mt-1.5 text-xs text-surface-500">
+                  Use apenas os seis primeiros dígitos, sem traços.
+                </p>
+              )}
             </div>
 
             <div>
@@ -149,7 +197,7 @@ function LoginContent() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !supabase}
               className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
               {loading ? (

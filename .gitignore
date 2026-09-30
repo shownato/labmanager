@@ -33,6 +33,7 @@ yarn-error.log*
 # local agent workspaces
 .agent/
 .claude-memory/
+.private/
 
 # typescript
 *.tsbuildinfo

@@ -1,91 +1,63 @@
-# 🖥️ LabManager
+# LabManager
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js" alt="Next.js" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-3.4-blue?style=for-the-badge&logo=tailwind-css" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/Supabase-Backend-emerald?style=for-the-badge&logo=supabase" alt="Supabase" />
-  <img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript" alt="TypeScript" />
-</p>
+Sistema do CCI para registrar e acompanhar manutenções de **320 computadores em 10 laboratórios**. Os estados são informados pelos usuários; não há agente de telemetria para detectar se uma máquina está ligada ou conectada.
 
-> **Sistema inteligente para gestão e monitoramento de laboratórios de informática.** Controle 310 computadores em tempo real com uma interface moderna e focada em produtividade.
+Documentação revisada em **30/09/2026**, a partir do código do commit `59443b0`. Os serviços em produção não foram inspecionados.
 
----
+## Documentação
 
-## ✨ Funcionalidades
+| Guia | Conteúdo |
+| --- | --- |
+| [Guia de uso](docs/GUIA-DE-USO.md) | Acesso, inventário, manutenção, histórico e QR codes |
+| [Cadastro de professores](docs/CADASTRO-PROFESSORES.md) | Matrículas, importação administrativa e situação do cadastro |
+| [Arquitetura](docs/ARQUITETURA.md) | Stack, estrutura, rotas, fluxos e API |
+| [Banco de dados](docs/BANCO-DE-DADOS.md) | Tabelas, RPCs, RLS, view e instalação |
+| [Operação](docs/OPERACAO.md) | Configuração, implantação, worker e diagnóstico |
+| [Pendências](docs/PENDENCIAS.md) | Problemas identificados e prioridades |
+| [Ponte GLPI](GLPI-BRIDGE.md) | Referência rápida da integração por fila |
 
-- 📊 **Dashboard Consolidado**: Visualize a saúde de todos os 10 laboratórios em um único lugar.
-- 🖥️ **Grid Interativo**: Cada laboratório possui um grid visual dos 31 PCs (LABX00-LABX30).
-- 🛠️ **Gestão de Manutenção**: Relate problemas técnicos com gravidade (Manutenção vs Crítico) e motivos pré-definidos.
-- 🕒 **Histórico em Tempo Real**: Acompanhe todas as ações realizadas no laboratório com atualizações instantâneas via Supabase Realtime.
-- 🔐 **Autenticação Segura**: Fluxo completo de login e cadastro integrado ao Supabase Auth.
-- 🌓 **Dark Mode Nativo**: Interface otimizada para uso diurno e noturno com Glassmorphism.
+## Funcionalidades implementadas
 
----
+- Login de professores pelos seis primeiros dígitos da matrícula e senha; opção separada por e-mail para a equipe CCI.
+- Dashboard, resumo por laboratório e detalhamento de PCs em manutenção.
+- Relato e resolução de problemas com histórico e RPCs atômicas.
+- Dashboard e laboratórios atualizados via Supabase Realtime.
+- Histórico com busca, filtros e paginação.
+- Leitor QR com câmera compatível e entrada manual.
+- Impressão de etiquetas restrita a administradores.
+- Tema claro/escuro e navegação responsiva.
+- Chamados GLPI por fila ou envio direto.
 
-## 🛠️ Tech Stack
+## Stack e execução local
 
-- **Frontend**: Next.js 15 (App Router), Tailwind CSS, Lucide React, Framer Motion.
-- **Backend**: Supabase (PostgreSQL, Auth, Realtime).
-- **Linguagem**: TypeScript.
+Next.js 15, React 19, TypeScript, Tailwind CSS 3, Lucide React e Supabase. O worker GLPI é um processo Node.js separado. As versões reproduzíveis estão em `package-lock.json`; Framer Motion não é dependência.
 
----
+Use Node.js compatível com todas as dependências do lockfile e npm. Confira os requisitos em [Operação](docs/OPERACAO.md).
 
-## 🚀 Como Iniciar
-
-### 1. Requisitos
-- Node.js 18+ instalado.
-- Uma conta no [Supabase](https://supabase.com).
-
-### 2. Clonar e Instalar
-```bash
-git clone <url-do-repositorio>
-cd labmanager
-npm install
+```powershell
+npm ci
+Copy-Item .env.local.example .env.local
 ```
 
-### 3. Configuração do Banco de Dados (Supabase)
-No SQL Editor do seu projeto Supabase, execute os arquivos na seguinte ordem:
+Preencha `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Utilize um banco de desenvolvimento previamente preparado. Leia [Banco de dados](docs/BANCO-DE-DADOS.md) antes de executar os SQLs: os scripts atuais possuem incompatibilidades e não constituem uma sequência segura de migrações.
 
-1.  **`supabase-setup.sql`**: Cria as tabelas base, índices e políticas de segurança (RLS).
-2.  **`add-roles.sql`**: Configura o sistema de perfis e roles de usuário.
-3.  **Popular Dados**: Execute o comando abaixo para gerar o SQL de inserção inicial de todos os 240 PCs:
-    ```bash
-    node generate-sql.js
-    ```
-    Copie o resultado e execute no SQL Editor.
-
-### 4. Variáveis de Ambiente
-Crie um arquivo `.env.local` na raiz da pasta `labmanager`:
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon-aqui
-```
-
-### 5. Rodar em Desenvolvimento
-```bash
+```powershell
 npm run dev
 ```
-Acesse [http://localhost:3000](http://localhost:3000)
 
----
+Abra `http://localhost:3000`. Para produção: `npm run build` e `npm start`. As variáveis públicas do Supabase precisam existir durante o build.
 
-## 📂 Organização de Laboratórios
+## Estado verificado
 
-| Lab | Prefixo | Faixa de PCs | Total |
-| :-- | :--- | :--- | :--- |
-| **Lab 1** | 100 | LAB100 — LAB130 | 31 |
-| **Lab 2** | 200 | LAB200 — LAB230 | 31 |
-| **Lab 3** | 300 | LAB300 — LAB330 | 31 |
-| **Lab 4** | 400 | LAB400 — LAB430 | 31 |
-| **Lab 5** | 500 | LAB500 — LAB535 | 36 |
-| **Lab 6** | 600 | LAB600 — LAB630 | 31 |
-| **Lab 7** | 700 | LAB700 — LAB735 | 36 |
-| **Lab 8** | 800 | LAB800 — LAB830 | 31 |
-| **Lab 9** | 900 | LAB900 — LAB930 | 31 |
-| **Lab 10** | 1000 | LAB1000 — LAB1030 | 31 |
+Em 30/09/2026, TypeScript e sintaxe do worker passaram. O build compilou o código, mas falhou na pré-renderização por ausência das variáveis do Supabase. O ESLint não encontrou configuração. Não foi encontrada suíte automatizada.
 
----
+Atualização posterior: o cadastro por matrícula acrescentou 11 testes de autenticação/importação, todos aprovados. As 125 contas da lista recebida ainda dependem de execução administrativa no Supabase; consulte o guia de cadastro.
 
-## 📜 Licença
-Desenvolvido para o **CCI (Centro de Computação e Informática)**.
+O build também passou com valores fictícios de Supabase para validação técnica. Integrações reais não foram testadas; a publicação exige novo build com as variáveis corretas.
+
+Permissões, compatibilidade dos SQLs e recuperação da fila têm [pendências conhecidas](docs/PENDENCIAS.md). A disponibilidade da Vercel, do Supabase e do Ubuntu não foi confirmada.
+
+## Manutenção
+
+Atualize o guia correspondente a cada mudança. Alterações no inventário exigem revisão de `src/lib/constants.ts`, `generate-sql.js` e da documentação. Não registre credenciais ou dados reais de usuários nos exemplos.
 
